@@ -113,6 +113,10 @@ class freiemodule {
 			$date = date("Y-m-d", time());
 			$menuId = (int)$this->checked->menuid;
 
+			if ($menuId === 1 && isset($_GET['search'])) {
+				return;
+			}
+
 			$sql =
 				"SELECT * ".
 				"FROM {$this->cms->tbname["papoo_freiemodule_daten"]} module ".
