@@ -3340,41 +3340,46 @@ class form_manager
 	function make_csv_single()
 	{
 		$sql = sprintf("SELECT * FROM %s
-								WHERE 	plugin_cform_form_id='%d'",
+						WHERE plugin_cform_form_id='%d'
+						ORDER BY plugin_cform_order_id ASC",
 			$this->cms->tbname['papoo_plugin_cform'],
 			$this->db->escape($this->checked->form_manager_id)
 		);
-		$result = $this->db->get_results($sql, ARRAY_A);
-		$csv = '';
-		if (is_array($result)) {
-			foreach ($result as $key => $value) {
-				foreach ($this->checked as $key2 => $value2) {
-					if ($value['plugin_cform_name'] == $key2) {
-						$csv .= '"' . $key2 . '",';
-					}
-				}
-			}
-			$csv .= "\n";
 
+		$result = $this->db->get_results($sql, ARRAY_A);
+		$headers = array();
+		$values = array();
+
+		if (is_array($result)) {
 			foreach ($result as $input) {
-				foreach ($this->checked as $key => $value) {
-					if ($input['plugin_cform_name'] == $key) {
-						if ($csv) {
-							$csv .= ',';
-						}
-						if (is_array($value)) {
-							$value = implode(';', $value);
-						}
-						if (is_null($value)) {
-							$value = '-';
-						}
-						$value = str_replace('"', '\\"', ((string)$value));
-						$csv .= '"' . $value . '"';
-						break;
-					}
+				$fieldName = $input['plugin_cform_name'];
+
+				if (!isset($this->checked->$fieldName)) {
+					continue;
 				}
+
+				$headers[] = $fieldName;
+
+				$value = $this->checked->$fieldName;
+
+				if (is_array($value)) {
+					$value = implode(';', $value);
+				}
+
+				if ($value === null || $value === '') {
+					$value = '-';
+				}
+
+				$values[] = (string)$value;
 			}
 		}
+
+		$escapeCsv = function ($value) {
+			return '"' . str_replace('"', '""', (string)$value) . '"';
+		};
+
+		$csv  = implode(',', array_map($escapeCsv, $headers)) . "\n";
+		$csv .= implode(',', array_map($escapeCsv, $values)) . "\n";
 
 		$file = "/dokumente/logs/formular_daten.csv";
 		$this->diverse->write_to_file($file, $csv);
